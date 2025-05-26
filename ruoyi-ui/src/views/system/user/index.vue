@@ -104,6 +104,17 @@
           </el-col>
           <el-col :span="1.5">
             <el-button
+              type="danger"
+              plain
+              icon="el-icon-delete"
+              size="mini"
+              :disabled="multiple"
+              @click="handleDelete"
+              v-hasPermi="['system:user:remove']"
+            >删除</el-button>
+          </el-col>
+          <el-col :span="1.5">
+            <el-button
               type="info"
               plain
               icon="el-icon-upload2"
@@ -161,6 +172,13 @@
                 @click="handleUpdate(scope.row)"
                 v-hasPermi="['system:user:edit']"
               >修改</el-button>
+              <el-button
+                size="mini"
+                type="text"
+                icon="el-icon-delete"
+                @click="handleDelete(scope.row)"
+                v-hasPermi="['system:user:remove']"
+              >删除</el-button>
               <el-dropdown size="mini" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['system:user:resetPwd', 'system:user:edit']">
                 <el-button size="mini" type="text" icon="el-icon-d-arrow-right">更多</el-button>
                 <el-dropdown-menu slot="dropdown">
@@ -369,6 +387,21 @@ export default {
       defaultProps: {
         children: "children",
         label: "label"
+      },
+      // 用户导入参数
+      upload: {
+        // 是否显示弹出层（用户导入）
+        open: false,
+        // 弹出层标题（用户导入）
+        title: "",
+        // 是否禁用上传
+        isUploading: false,
+        // 是否更新已经存在的用户数据
+        updateSupport: 0,
+        // 设置上传的请求头部
+        headers: { Authorization: "Bearer " + getToken() },
+        // 上传的地址
+        url: process.env.VUE_APP_BASE_API + "/system/user/importData"
       },
       // 查询参数
       queryParams: {
@@ -595,6 +628,22 @@ export default {
           }
         }
       });
+    },
+    /** 删除按钮操作 */
+    handleDelete(row) {
+      const userIds = row.userId || this.ids;
+      this.$modal.confirm('是否确认删除用户编号为"' + userIds + '"的数据项？').then(function() {
+        return delUser(userIds);
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("删除成功");
+      }).catch(() => {});
+    },
+    /** 导出按钮操作 */
+    handleExport() {
+      this.download('system/user/export', {
+        ...this.queryParams
+      }, `user_${new Date().getTime()}.xlsx`)
     },
     /** 导入按钮操作 */
     handleImport() {
